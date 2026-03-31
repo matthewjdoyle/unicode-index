@@ -111,6 +111,7 @@ const $ = (id) => document.getElementById(id);
 const searchInput = $("search");
 const searchClear = $("searchClear");
 const filterChips = $("filterChips");
+const filterFadeL = $("filterFadeL");
 const resultCount = $("resultCount");
 const charGrid = $("charGrid");
 const loadSentinel = $("loadSentinel");
@@ -167,29 +168,94 @@ function debounce(fn, ms) {
   };
 }
 
+/* ── Fuzzy scoring ────────────────────────────────────── */
+function fuzzyScore(haystack, needle) {
+  // Subsequence match: all needle chars must appear in haystack in order.
+  // Returns 0 if no match, otherwise a positive score (higher = better).
+  const h = haystack.length;
+  const n = needle.length;
+  if (n === 0) return 1;
+  if (n > h) return 0;
+
+  let hi = 0, ni = 0, score = 0, run = 0, firstAt = -1;
+
+  while (hi < h && ni < n) {
+    if (haystack[hi] === needle[ni]) {
+      if (firstAt < 0) firstAt = hi;
+      run++;
+      score += run * run; // consecutive chars score exponentially more
+      ni++;
+    } else {
+      run = 0;
+    }
+    hi++;
+  }
+
+  if (ni < n) return 0; // didn't consume all of needle
+
+  // Bonus for matching earlier in the string
+  score += Math.max(0, 10 - firstAt);
+  return score;
+}
+
 /* ── Filter logic ────────────────────────────────────── */
 function computeFiltered() {
   const q = state.search.trim().toLowerCase();
   const block = state.activeBlock;
 
-  return UNICODE_DATA.filter((entry) => {
-    // Hide control characters unless explicitly searched for
-    if (isControl(entry) && !q) return false;
-    if (block !== "all" && entry.block !== block) return false;
-    if (!q) return true;
+  // No query: return all non-control chars, optionally filtered by block
+  if (!q) {
+    return UNICODE_DATA.filter((entry) => {
+      if (isControl(entry)) return false;
+      if (block !== "all" && entry.block !== block) return false;
+      return true;
+    });
+  }
 
-    // Match code point formats: U+0041, 0041, 41 (hex), 65 (decimal)
+  const results = [];
+
+  for (const entry of UNICODE_DATA) {
+    if (block !== "all" && entry.block !== block) continue;
+
     const hex = entry.hex.toLowerCase();
-    if (hex === q) return true;
-    if (`u+${hex}` === q) return true;
-    if (entry.cp === parseInt(q, 10)) return true;
-    if (entry.cp === parseInt(q, 16)) return true;
-    if (entry.char === q) return true;
-    if (entry.name.toLowerCase().includes(q)) return true;
-    if (entry.block.toLowerCase().includes(q)) return true;
-    if (entry.cat.toLowerCase() === q) return true;
-    return false;
-  });
+    const nameLower = entry.name.toLowerCase();
+    const blockLower = entry.block.toLowerCase();
+
+    // Tier 1 — exact code-point / character identity (score 10000+)
+    if (hex === q || `u+${hex}` === q) {
+      results.push({ entry, score: 10000 }); continue;
+    }
+    const asDecimal = parseInt(q, 10);
+    const asHex = parseInt(q, 16);
+    if ((!isNaN(asDecimal) && entry.cp === asDecimal) ||
+        (!isNaN(asHex) && entry.cp === asHex && /^[0-9a-f]+$/i.test(q))) {
+      results.push({ entry, score: 9000 }); continue;
+    }
+    if (entry.char === q) { results.push({ entry, score: 8500 }); continue; }
+    if (entry.cat.toLowerCase() === q) { results.push({ entry, score: 7000 }); continue; }
+
+    // Tier 2 — substring match in name or block (score 2000–5000)
+    const nameIdx = nameLower.indexOf(q);
+    if (nameIdx >= 0) {
+      // Reward matches at word boundaries
+      const atStart = nameIdx === 0;
+      const atWordBoundary = nameIdx > 0 && nameLower[nameIdx - 1] === " ";
+      const base = atStart ? 5000 : atWordBoundary ? 4000 : 3000;
+      results.push({ entry, score: base - nameIdx * 0.1 }); continue;
+    }
+    if (blockLower.includes(q)) {
+      results.push({ entry, score: 2000 }); continue;
+    }
+
+    // Tier 3 — fuzzy match against name (min 2 chars to avoid noise)
+    if (q.length >= 2) {
+      const score = fuzzyScore(nameLower, q);
+      if (score > 0) results.push({ entry, score });
+    }
+  }
+
+  results.sort((a, b) => b.score - a.score);
+  return results.map((r) => r.entry);
 }
 
 /* ── Render ──────────────────────────────────────────── */
@@ -307,7 +373,6 @@ function createCard(entry) {
   const card = document.createElement("button");
   card.className = "char-card";
   card.setAttribute("aria-label", `${entry.name} U+${entry.hex}`);
-  card.style.setProperty("--block-color", blockColor(entry.block));
   card.dataset.idx = entry.cp; // use cp as unique key
 
   const glyphEl = document.createElement("div");
@@ -320,6 +385,13 @@ function createCard(entry) {
 
   card.appendChild(glyphEl);
   card.appendChild(hexEl);
+
+  const nameEl = document.createElement("div");
+  nameEl.className = "char-name";
+  const rawName = entry.name;
+  nameEl.textContent = rawName.length > 20 ? rawName.slice(0, 18) + "…" : rawName;
+  nameEl.title = rawName;
+  card.appendChild(nameEl);
 
   card.addEventListener("click", () => {
     const idx = state.filtered.findIndex((e) => e.cp === entry.cp);
@@ -353,6 +425,10 @@ function openDetail(globalIdx, filteredIdx) {
   detailBackdrop.classList.add("visible");
   detailPanel.focus?.();
 
+  // Highlight active card
+  document.querySelector(".char-card.is-active")?.classList.remove("is-active");
+  document.querySelector(`.char-card[data-idx="${entry.cp}"]`)?.classList.add("is-active");
+
   // Update nav buttons
   updateDetailNav();
 }
@@ -360,6 +436,7 @@ function openDetail(globalIdx, filteredIdx) {
 function closeDetail() {
   detailPanel.setAttribute("aria-hidden", "true");
   detailBackdrop.classList.remove("visible");
+  document.querySelector(".char-card.is-active")?.classList.remove("is-active");
 }
 
 function updateDetailNav() {
@@ -382,6 +459,7 @@ function renderDetailContent(entry) {
       label: "Binary",
       value: entry.cp.toString(2),
       copy: entry.cp.toString(2),
+      wrap: true,
     },
     { label: "HTML Dec", value: `&#${entry.cp};`, copy: `&#${entry.cp};` },
     { label: "HTML Hex", value: `&#x${entry.hex};`, copy: `&#x${entry.hex};` },
@@ -414,7 +492,7 @@ function renderDetailContent(entry) {
           (r) => `
         <div class="detail-row">
           <span class="detail-row-label">${r.label}</span>
-          <span class="detail-row-value">${escHtml(r.value)}</span>
+          <span class="detail-row-value"${r.wrap ? ' style="white-space:normal;word-break:break-all"' : ""}>${escHtml(r.value)}</span>
           ${r.copy ? `<button class="detail-copy-btn" data-copy="${escHtml(r.copy)}" title="Copy ${r.label}" aria-label="Copy ${r.label}">⎘</button>` : ""}
         </div>
       `,
@@ -534,6 +612,11 @@ function buildFilterChips() {
   }
 
   filterChips.appendChild(frag);
+
+  // Show/hide left fade based on scroll position
+  filterChips.addEventListener("scroll", () => {
+    filterFadeL.classList.toggle("visible", filterChips.scrollLeft > 8);
+  }, { passive: true });
 }
 
 /* ── Infinite scroll ─────────────────────────────────── */

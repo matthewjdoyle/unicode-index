@@ -86,7 +86,7 @@
               <path d="m21 21-4.35-4.35" />
             </svg>
             <input
-              type="search"
+              type="text"
               id="search"
               class="search-input"
               placeholder="Search by name, character, or code point…"
@@ -110,15 +110,16 @@
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
+            <kbd class="search-kbd" aria-hidden="true">/</kbd>
           </div>
           <div class="search-glow" aria-hidden="true"></div>
         </div>
 
-        <button class="about-btn" id="aboutBtn" aria-label="About Unicode Index">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4M12 8h.01"/>
-          </svg>
+        <button
+          class="about-btn"
+          id="aboutBtn"
+          aria-label="About Unicode Index"
+        >
           <span>About</span>
         </button>
       </div>
@@ -126,6 +127,7 @@
 
     <!-- ── Filter bar ── -->
     <nav class="filter-bar" aria-label="Filter by Unicode block">
+      <div class="filter-fade-l" id="filterFadeL" aria-hidden="true"></div>
       <div class="filter-scroll" id="filterChips" role="list">
         <!-- populated by JS -->
       </div>
@@ -146,7 +148,7 @@
       <div id="loadSentinel" class="load-sentinel" aria-hidden="true"></div>
       <div id="emptyState" class="empty-state" hidden>
         <div class="empty-icon" aria-hidden="true">∅</div>
-        <p class="empty-title">No characters found</p>
+        <p class="empty-title">No more characters found</p>
         <p class="empty-sub">
           Try a different name, character, or code like <code>U+0041</code>
         </p>
@@ -232,39 +234,107 @@
 
     <!-- ── About Modal ── -->
     <div class="modal-backdrop" id="aboutBackdrop" aria-hidden="true"></div>
-    <dialog class="about-modal" id="aboutModal" aria-label="About Unicode Index">
-      <button class="about-modal-close" id="aboutClose" aria-label="Close about">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M18 6 6 18M6 6l12 12"/>
+    <dialog
+      class="about-modal"
+      id="aboutModal"
+      aria-label="About Unicode Index"
+    >
+      <button
+        class="about-modal-close"
+        id="aboutClose"
+        aria-label="Close about"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       </button>
       <div class="about-modal-logo" aria-hidden="true">
         <svg width="48" height="48" viewBox="0 0 34 34" fill="none">
-          <path d="M10 10v10a7 7 0 0 0 7 7" stroke="url(#amlg)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-          <path d="M24 10v17" stroke="url(#amlg)" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="M17 27h7" stroke="url(#amlg)" stroke-width="2.4" stroke-linecap="round"/>
+          <path
+            d="M10 10v10a7 7 0 0 0 7 7"
+            stroke="url(#amlg)"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            fill="none"
+          />
+          <path
+            d="M24 10v17"
+            stroke="url(#amlg)"
+            stroke-width="2.4"
+            stroke-linecap="round"
+          />
+          <path
+            d="M17 27h7"
+            stroke="url(#amlg)"
+            stroke-width="2.4"
+            stroke-linecap="round"
+          />
           <defs>
-            <linearGradient id="amlg" x1="8" y1="17" x2="26" y2="17" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#2dd4a8"/>
-              <stop offset="100%" stop-color="#8b5cf6"/>
+            <linearGradient
+              id="amlg"
+              x1="8"
+              y1="17"
+              x2="26"
+              y2="17"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stop-color="#2dd4a8" />
+              <stop offset="100%" stop-color="#8b5cf6" />
             </linearGradient>
           </defs>
         </svg>
       </div>
-      <h2 class="about-modal-title">Unicode<span class="logo-accent">Index</span></h2>
-      <p class="about-modal-tagline">A complete, searchable reference for all Unicode characters.</p>
+      <h2 class="about-modal-title">
+        Unicode<span class="logo-accent">Index</span>
+      </h2>
+      <p class="about-modal-tagline">
+        A complete, searchable reference for all Unicode characters.
+      </p>
       <div class="about-modal-body">
         <div class="about-stat-row">
-          <div class="about-stat"><span class="about-stat-num" id="aboutCharCount">–</span><span class="about-stat-label">Characters</span></div>
-          <div class="about-stat"><span class="about-stat-num" id="aboutBlockCount">–</span><span class="about-stat-label">Blocks</span></div>
+          <div class="about-stat">
+            <span class="about-stat-num" id="aboutCharCount">–</span
+            ><span class="about-stat-label">Characters</span>
+          </div>
+          <div class="about-stat">
+            <span class="about-stat-num" id="aboutBlockCount">–</span
+            ><span class="about-stat-label">Blocks</span>
+          </div>
         </div>
         <ul class="about-feature-list">
-          <li><span class="about-feat-icon">⌕</span> Search by name, character, or code point (<code>U+0041</code>)</li>
-          <li><span class="about-feat-icon">⊞</span> Filter by Unicode block category</li>
-          <li><span class="about-feat-icon">⎘</span> One-click copy of character, HTML entities, CSS escapes &amp; more</li>
-          <li><span class="about-feat-icon">↗</span> Infinite-scroll through every character</li>
+          <li>
+            <span class="about-feat-icon">⌕</span> Search by name, character, or
+            code point (<code>U+0041</code>)
+          </li>
+          <li>
+            <span class="about-feat-icon">⊞</span> Filter by Unicode block
+            category
+          </li>
+          <li>
+            <span class="about-feat-icon">⎘</span> One-click copy of character,
+            HTML entities, CSS escapes &amp; more
+          </li>
+          <li>
+            <span class="about-feat-icon">↗</span> Infinite-scroll through every
+            character
+          </li>
         </ul>
-        <p class="about-modal-source">Character data sourced from the <a href="https://en.wikipedia.org/wiki/List_of_Unicode_characters" target="_blank" rel="noopener">Unicode character list</a>.</p>
+        <p class="about-modal-source">
+          Character data sourced from the
+          <a
+            href="https://en.wikipedia.org/wiki/List_of_Unicode_characters"
+            target="_blank"
+            rel="noopener"
+            >Unicode character list</a
+          >.
+        </p>
       </div>
     </dialog>
 
