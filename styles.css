@@ -958,3 +958,222 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── About button ─────────────────────────────────────── */
+.about-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: rgba(255 255 255 / 0.04);
+  border: 1px solid rgba(255 255 255 / 0.08);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.about-btn:hover {
+  color: var(--accent);
+  background: rgba(45 212 168 / 0.07);
+  border-color: rgba(45 212 168 / 0.25);
+}
+.about-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── About modal ──────────────────────────────────────── */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0 0 0 / 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal-backdrop.visible {
+  display: block;
+}
+
+.about-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 201;
+  margin: auto;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 1px solid rgba(45 212 168 / 0.14);
+  border-radius: 20px;
+  padding: 40px 36px 36px;
+  color: var(--text-1);
+  box-shadow: 0 24px 60px rgba(0 0 0 / 0.6), 0 0 0 1px rgba(255 255 255 / 0.04);
+  /* Reset <dialog> default styles */
+  max-width: none;
+}
+.about-modal:not([open]) { display: none; }
+.about-modal::backdrop { display: none; } /* we use our own */
+
+.about-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255 255 255 / 0.05);
+  border: 1px solid rgba(255 255 255 / 0.08);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-3);
+  transition: color 0.15s, background 0.15s;
+}
+.about-modal-close:hover { color: var(--text-1); background: rgba(255 255 255 / 0.1); }
+.about-modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.about-modal-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.about-modal-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  text-align: center;
+  margin: 0 0 8px;
+}
+.about-modal-tagline {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-3);
+  margin: 0 0 28px;
+  line-height: 1.6;
+}
+
+.about-stat-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.about-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 12px;
+  background: rgba(255 255 255 / 0.03);
+  border: 1px solid rgba(255 255 255 / 0.07);
+  border-radius: 14px;
+}
+.about-stat-num {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, var(--accent), #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.about-stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.about-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.about-feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.about-feat-icon {
+  font-size: 16px;
+  line-height: 1.4;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.about-feature-list code {
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 12px;
+  background: rgba(255 255 255 / 0.07);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+.about-modal-source {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+  margin: 0;
+  line-height: 1.6;
+}
+.about-modal-source a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.about-modal-source a:hover { text-decoration: underline; }
+
+/* ── Hero glyph copyable ──────────────────────────────── */
+.detail-hero-glyph-copyable {
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.detail-hero-glyph-copyable:hover {
+  background: rgba(45 212 168 / 0.06);
+  transform: scale(1.04);
+}
+.detail-hero-glyph-copyable:active,
+.detail-hero-glyph-copyable.copied {
+  transform: scale(0.96);
+  background: rgba(45 212 168 / 0.12);
+}
+.detail-hero-glyph-copyable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.detail-hero-copy-hint {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.detail-hero-glyph-copyable:hover .detail-hero-copy-hint {
+  opacity: 1;
+}

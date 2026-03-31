@@ -122,6 +122,10 @@ const detailInner = $("detailInner");
 const detailPrev = $("detailPrev");
 const detailNext = $("detailNext");
 const toast = $("toast");
+const aboutBtn = $("aboutBtn");
+const aboutModal = $("aboutModal");
+const aboutBackdrop = $("aboutBackdrop");
+const aboutClose = $("aboutClose");
 
 /* ── Helpers ─────────────────────────────────────────── */
 function isControl(entry) {
@@ -392,10 +396,12 @@ function renderDetailContent(entry) {
   const catCode = entry.cat;
   const catLabel = CAT_LABELS[catCode] ?? catCode;
 
+  const copyChar = isCtrl ? "" : entry.char;
   detailInner.innerHTML = `
     <div class="detail-hero">
-      <div class="detail-hero-glyph-wrap" style="border-color:${color}33;box-shadow:0 0 40px ${color}15">
+      <div class="detail-hero-glyph-wrap${copyChar ? " detail-hero-glyph-copyable" : ""}" style="border-color:${color}33;box-shadow:0 0 40px ${color}15" ${copyChar ? `data-copy="${escHtml(copyChar)}" role="button" tabindex="0" title="Click to copy character" aria-label="Copy character ${escHtml(entry.name)}"` : ""}>
         <div class="detail-hero-glyph${isCtrl ? " is-control" : ""}" style="color:${isCtrl ? "" : color}">${escHtml(isCtrl ? (entry.name.match(/^([A-Z]{2,5})/)?.[1] ?? "·") : isCombining(entry) ? "\u25CC" + entry.char : entry.char)}</div>
+        ${copyChar ? `<div class="detail-hero-copy-hint" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</div>` : ""}
       </div>
       <div class="detail-hero-name">${escHtml(entry.name)}</div>
       <div class="detail-hero-block" style="border-color:${color}44;color:${color}">${escHtml(entry.block)}</div>
@@ -442,6 +448,21 @@ function renderDetailContent(entry) {
       );
     });
   });
+
+  // Bind hero glyph click to copy character
+  const glyphWrap = detailInner.querySelector(".detail-hero-glyph-copyable");
+  if (glyphWrap) {
+    const activateGlyphCopy = (e) => {
+      e.stopPropagation();
+      copyToClipboard(glyphWrap.dataset.copy, "Character");
+      glyphWrap.classList.add("copied");
+      setTimeout(() => glyphWrap.classList.remove("copied"), 800);
+    };
+    glyphWrap.addEventListener("click", activateGlyphCopy);
+    glyphWrap.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activateGlyphCopy(e); }
+    });
+  }
 }
 
 /* ── Clipboard ───────────────────────────────────────── */
@@ -554,6 +575,26 @@ searchClear.addEventListener("click", () => {
 /* ── Detail panel events ─────────────────────────────── */
 detailClose.addEventListener("click", closeDetail);
 detailBackdrop.addEventListener("click", closeDetail);
+
+/* ── About modal ─────────────────────────────────────── */
+function openAbout() {
+  const uniqueBlocks = new Set(UNICODE_DATA.map((e) => e.block)).size;
+  $("aboutCharCount").textContent = UNICODE_DATA.length.toLocaleString();
+  $("aboutBlockCount").textContent = uniqueBlocks.toLocaleString();
+  aboutModal.showModal?.() || aboutModal.setAttribute("open", "");
+  aboutBackdrop.setAttribute("aria-hidden", "false");
+  aboutBackdrop.classList.add("visible");
+}
+function closeAbout() {
+  aboutModal.close?.() || aboutModal.removeAttribute("open");
+  aboutBackdrop.setAttribute("aria-hidden", "true");
+  aboutBackdrop.classList.remove("visible");
+}
+aboutBtn.addEventListener("click", openAbout);
+aboutClose.addEventListener("click", closeAbout);
+aboutBackdrop.addEventListener("click", closeAbout);
+aboutModal.addEventListener("click", (e) => { if (e.target === aboutModal) closeAbout(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && aboutModal.open) closeAbout(); });
 
 detailPrev.addEventListener("click", () => {
   if (detailContext.filteredIdx > 0) {
