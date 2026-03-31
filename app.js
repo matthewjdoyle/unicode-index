@@ -2,52 +2,64 @@
    Unicode Index — app.js
    ═══════════════════════════════════════════════════════ */
 
-/* ── Block color palette ─────────────────────────────── */
+/* ── Block color palette (6 semantic tones) ──────────── */
+// Colors are drawn from the simplified dev-tool palette.
+// Blocks are grouped by their primary content type.
+
+const BLOCK_COLOR_LETTERS  = '#388bfd'; // letters (blue)
+const BLOCK_COLOR_MARKS    = '#6e7681'; // diacritical marks (gray)
+const BLOCK_COLOR_NUMBERS  = '#3fb950'; // numbers (green)
+const BLOCK_COLOR_SYMBOLS  = '#a371f7'; // symbols / misc (purple)
+const BLOCK_COLOR_CONTROL  = '#f85149'; // controls (red)
+const BLOCK_COLOR_PUNCT    = '#8b949e'; // punctuation / arrows (mid gray)
+const BLOCK_COLOR_MATH     = '#58a6ff'; // math operators (light blue)
+const BLOCK_COLOR_SCRIPT   = '#d29922'; // non-Latin scripts (amber)
+
 const BLOCK_COLORS = {
-  'C0 Controls':                         '#ef4444',
-  'Basic Latin':                          '#06b6d4',
-  'Delete':                               '#ef4444',
-  'C1 Controls':                          '#f87171',
-  'Latin-1 Supplement':                   '#3b82f6',
-  'Latin Extended-A':                     '#6366f1',
-  'Latin Extended-B':                     '#8b5cf6',
-  'IPA Extensions':                       '#a855f7',
-  'Spacing Modifier Letters':             '#ec4899',
-  'Combining Diacritical Marks':          '#f97316',
-  'Greek and Coptic':                     '#84cc16',
-  'Cyrillic':                             '#22c55e',
-  'Cyrillic Supplement':                  '#10b981',
-  'Armenian':                             '#14b8a6',
-  'Hebrew':                               '#f97316',
-  'Arabic':                               '#eab308',
-  'Syriac':                               '#f59e0b',
-  'Thaana':                               '#fb923c',
-  'Latin Extended Additional':            '#818cf8',
-  'Greek Extended':                       '#c084fc',
-  'General Punctuation':                  '#22d3ee',
-  'Superscripts and Subscripts':          '#0ea5e9',
-  'Currency Symbols':                     '#f59e0b',
-  'Combining Marks for Symbols':          '#fb923c',
-  'Letterlike Symbols':                   '#a78bfa',
-  'Number Forms':                         '#4ade80',
-  'Arrows':                               '#22d3ee',
-  'Mathematical Operators':               '#818cf8',
-  'Miscellaneous Technical':              '#60a5fa',
-  'Control Pictures':                     '#f472b6',
-  'Optical Character Recognition':        '#fb923c',
-  'Enclosed Alphanumerics':               '#86efac',
-  'Box Drawing':                          '#2dd4bf',
-  'Block Elements':                       '#34d399',
-  'Geometric Shapes':                     '#22d3ee',
-  'Miscellaneous Symbols':                '#facc15',
-  'Dingbats':                             '#f472b6',
-  'Miscellaneous Mathematical Symbols-A': '#a78bfa',
-  'Supplemental Arrows-A':               '#38bdf8',
-  'Braille Patterns':                     '#c084fc',
-  'Supplemental Arrows-B':               '#22d3ee',
-  'Miscellaneous Mathematical Symbols-B': '#818cf8',
-  'Supplemental Mathematical Operators':  '#60a5fa',
-  'Miscellaneous Symbols and Arrows':     '#2dd4bf',
+  'C0 Controls':                         BLOCK_COLOR_CONTROL,
+  'Basic Latin':                          BLOCK_COLOR_LETTERS,
+  'Delete':                               BLOCK_COLOR_CONTROL,
+  'C1 Controls':                          BLOCK_COLOR_CONTROL,
+  'Latin-1 Supplement':                   BLOCK_COLOR_LETTERS,
+  'Latin Extended-A':                     BLOCK_COLOR_LETTERS,
+  'Latin Extended-B':                     BLOCK_COLOR_LETTERS,
+  'IPA Extensions':                       BLOCK_COLOR_LETTERS,
+  'Spacing Modifier Letters':             BLOCK_COLOR_MARKS,
+  'Combining Diacritical Marks':          BLOCK_COLOR_MARKS,
+  'Greek and Coptic':                     BLOCK_COLOR_SCRIPT,
+  'Cyrillic':                             BLOCK_COLOR_SCRIPT,
+  'Cyrillic Supplement':                  BLOCK_COLOR_SCRIPT,
+  'Armenian':                             BLOCK_COLOR_SCRIPT,
+  'Hebrew':                               BLOCK_COLOR_SCRIPT,
+  'Arabic':                               BLOCK_COLOR_SCRIPT,
+  'Syriac':                               BLOCK_COLOR_SCRIPT,
+  'Thaana':                               BLOCK_COLOR_SCRIPT,
+  'Latin Extended Additional':            BLOCK_COLOR_LETTERS,
+  'Greek Extended':                       BLOCK_COLOR_SCRIPT,
+  'General Punctuation':                  BLOCK_COLOR_PUNCT,
+  'Superscripts and Subscripts':          BLOCK_COLOR_NUMBERS,
+  'Currency Symbols':                     BLOCK_COLOR_SYMBOLS,
+  'Combining Marks for Symbols':          BLOCK_COLOR_MARKS,
+  'Letterlike Symbols':                   BLOCK_COLOR_SYMBOLS,
+  'Number Forms':                         BLOCK_COLOR_NUMBERS,
+  'Arrows':                               BLOCK_COLOR_PUNCT,
+  'Mathematical Operators':               BLOCK_COLOR_MATH,
+  'Miscellaneous Technical':              BLOCK_COLOR_SYMBOLS,
+  'Control Pictures':                     BLOCK_COLOR_CONTROL,
+  'Optical Character Recognition':        BLOCK_COLOR_SYMBOLS,
+  'Enclosed Alphanumerics':               BLOCK_COLOR_NUMBERS,
+  'Box Drawing':                          BLOCK_COLOR_PUNCT,
+  'Block Elements':                       BLOCK_COLOR_PUNCT,
+  'Geometric Shapes':                     BLOCK_COLOR_SYMBOLS,
+  'Miscellaneous Symbols':                BLOCK_COLOR_SYMBOLS,
+  'Dingbats':                             BLOCK_COLOR_SYMBOLS,
+  'Miscellaneous Mathematical Symbols-A': BLOCK_COLOR_MATH,
+  'Supplemental Arrows-A':               BLOCK_COLOR_PUNCT,
+  'Braille Patterns':                     BLOCK_COLOR_SYMBOLS,
+  'Supplemental Arrows-B':               BLOCK_COLOR_PUNCT,
+  'Miscellaneous Mathematical Symbols-B': BLOCK_COLOR_MATH,
+  'Supplemental Mathematical Operators':  BLOCK_COLOR_MATH,
+  'Miscellaneous Symbols and Arrows':     BLOCK_COLOR_PUNCT,
 };
 
 /* ── Unicode category descriptions ──────────────────── */
@@ -224,8 +236,8 @@ function renderFlatBatch(startIdx) {
     const hdr = document.createElement('div');
     hdr.className = 'section-header';
     hdr.innerHTML = `
-      <div class="section-title" style="color:var(--cyan)">
-        <span class="section-title-dot" style="color:var(--cyan);background:var(--cyan)"></span>
+      <div class="section-title" style="color:var(--accent)">
+        <span class="section-title-dot" style="color:var(--accent);background:var(--accent)"></span>
         Search Results
       </div>
       <div class="section-line"></div>
@@ -426,7 +438,7 @@ function buildFilterChips() {
     chip.setAttribute('role', 'listitem');
 
     if (block === 'all') {
-      chip.innerHTML = `<span class="filter-chip-dot" style="background:linear-gradient(135deg,#00d4ff,#bf5cf6)"></span> All Blocks`;
+      chip.innerHTML = `<span class="filter-chip-dot" style="background:var(--accent)"></span> All Blocks`;
     } else {
       const color = blockColor(block);
       chip.innerHTML = `<span class="filter-chip-dot" style="background:${color}"></span> ${escHtml(block)}`;
@@ -522,74 +534,129 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ── Starfield ───────────────────────────────────────── */
-function initStarfield() {
-  const canvas = $('starfield');
-  const ctx = canvas.getContext('2d');
-  let W, H, stars;
+/* ── Unrenderable character detection ───────────────── */
+// Compares each character's canvas render against two Unicode noncharacters
+// (U+FDD0, U+FDD1). These are permanently unassigned codepoints that no
+// font should define glyphs for — both should produce the exact same
+// "missing glyph" pixel pattern (the tofu box).
+// Note: U+FFFD (Replacement Character) is NOT used here — it is a valid,
+// intentionally designed glyph in every font, not a missing-glyph indicator.
 
-  const NUM_STARS = 220;
-  const COLORS = ['#00d4ff', '#bf5cf6', '#ffffff', '#ffffff', '#ffffff'];
+function runRenderabilityCheck() {
+  const SIZE = 28;
+  const FONT = `${SIZE - 6}px sans-serif`;
 
-  function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-    stars = Array.from({ length: NUM_STARS }, () => ({
-      x:    Math.random() * W,
-      y:    Math.random() * H,
-      r:    Math.random() * 1.4 + 0.2,
-      a:    Math.random() * Math.PI * 2,
-      speed: (Math.random() * 0.15 + 0.02),
-      drift: (Math.random() - 0.5) * 0.12,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      alpha: Math.random() * 0.6 + 0.2,
-      alphaDir: (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.003 + 0.001),
-    }));
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.font = FONT;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#000';
+
+  function alphaChecksum(char) {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.fillText(char, SIZE / 2, SIZE / 2);
+    const d = ctx.getImageData(0, 0, SIZE, SIZE).data;
+    let sum = 0;
+    for (let i = 3; i < d.length; i += 4) sum += d[i]; // sum alpha channel
+    return sum;
   }
 
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
+  // Establish tofu reference using Unicode noncharacters U+FDD0–U+FDD2.
+  // If all three produce the same checksum, that IS the missing-glyph pattern.
+  const nc0 = alphaChecksum('\uFDD0');
+  const nc1 = alphaChecksum('\uFDD1');
+  const nc2 = alphaChecksum('\uFDD2');
 
-    for (const s of stars) {
-      // Twinkle
-      s.alpha += s.alphaDir;
-      if (s.alpha > 0.85 || s.alpha < 0.1) s.alphaDir *= -1;
+  // At least two of the three must agree; if none agree, skip the check.
+  let tofuSum;
+  if (nc0 === nc1 || nc0 === nc2) {
+    tofuSum = nc0;
+  } else if (nc1 === nc2) {
+    tofuSum = nc1;
+  } else {
+    console.warn('[Unicode Index] Renderability check skipped — browser renders Unicode noncharacters inconsistently, unable to establish a reliable tofu reference.');
+    return;
+  }
 
-      // Slow drift
-      s.x += s.drift;
-      s.y -= s.speed;
-      if (s.y < -2)   { s.y = H + 2; s.x = Math.random() * W; }
-      if (s.x < -2)   s.x = W + 2;
-      if (s.x > W + 2) s.x = -2;
+  const hiddenByBlock = new Map();
+  let totalHidden = 0;
 
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = s.color;
-      ctx.globalAlpha = s.alpha;
-      ctx.fill();
-      ctx.globalAlpha = 1;
+  // Build a card lookup from cp → DOM element
+  const cards = charGrid.querySelectorAll('.char-card');
+  const cardByCp = new Map();
+  for (const card of cards) {
+    const cp = parseInt(card.dataset.idx, 10);
+    if (!isNaN(cp)) cardByCp.set(cp, card);
+  }
+
+  // Only test characters that aren't already shown as placeholders
+  const candidates = UNICODE_DATA.filter(e =>
+    !isControl(e) && !isCombining(e) && !isSpace(e) && cardByCp.has(e.cp)
+  );
+
+  let idx = 0;
+
+  function processBatch(deadline) {
+    while (idx < candidates.length && (deadline.timeRemaining() > 1 || deadline.didTimeout)) {
+      const entry = candidates[idx++];
+      const checksum = alphaChecksum(entry.char);
+
+      // Unrenderable if: matches tofu pattern, or renders as fully transparent
+      if (checksum === tofuSum || checksum === 0) {
+        const card = cardByCp.get(entry.cp);
+        if (card) {
+          card.hidden = true;
+          totalHidden++;
+          if (!hiddenByBlock.has(entry.block)) hiddenByBlock.set(entry.block, []);
+          hiddenByBlock.get(entry.block).push(`U+${entry.hex}`);
+        }
+      }
     }
 
-    requestAnimationFrame(draw);
+    if (idx < candidates.length) {
+      requestIdleCallback(processBatch, { timeout: 200 });
+    } else if (totalHidden > 0) {
+      const lines = [''];
+      for (const [block, cps] of hiddenByBlock) {
+        lines.push(`  ${block} (${cps.length}): ${cps.slice(0, 8).join(' ')}${cps.length > 8 ? ' …' : ''}`);
+      }
+      console.warn(
+        `[Unicode Index] ${totalHidden} character${totalHidden === 1 ? '' : 's'} hidden — not renderable by current system fonts:\n${lines.join('\n')}`
+      );
+    }
   }
 
-  window.addEventListener('resize', resize);
-  resize();
-  draw();
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(processBatch, { timeout: 500 });
+  } else {
+    // Fallback for browsers without rIC (Safari < 16.4)
+    setTimeout(() => {
+      const mockDeadline = { timeRemaining: () => 10, didTimeout: false };
+      function runAll() {
+        mockDeadline.didTimeout = true;
+        processBatch(mockDeadline);
+        if (idx < candidates.length) setTimeout(runAll, 0);
+      }
+      runAll();
+    }, 300);
+  }
 }
-
 /* ── Boot ────────────────────────────────────────────── */
 (function init() {
   buildFilterChips();
   renderAll();
-  initStarfield();
+  // Run renderability check after paint
+  requestAnimationFrame(() => requestAnimationFrame(runRenderabilityCheck));
 
   // Keyboard shortcut hint
   const hint = document.createElement('div');
   hint.style.cssText = `
-    position:fixed; bottom:24px; right:24px; z-index:50;
-    font-size:11px; color:rgba(255,255,255,0.2);
-    font-family:'JetBrains Mono',monospace;
+    position:fixed; bottom:20px; right:20px; z-index:50;
+    font-size:11px; color:rgba(139,148,158,0.5);
+    font-family:ui-monospace,'Cascadia Code','Fira Code',monospace;
     pointer-events:none;
   `;
   hint.textContent = '/ to search';
