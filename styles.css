@@ -29,6 +29,7 @@
 
   --header-h: 64px;
   --filter-h: 48px;
+  --sidebar-w: 200px;
 
   --radius-card: 12px;
   --radius-pill: 999px;
@@ -257,115 +258,112 @@ a {
   color: var(--red);
 }
 
-/* ── Filter Bar ─────────────────────────────────────── */
+/* ── Content Layout (sidebar + main) ────────────────── */
+.content-layout {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* ── Filter Sidebar ──────────────────────────────────── */
 .filter-bar {
   position: sticky;
   top: var(--header-h);
   z-index: 90;
-  height: var(--filter-h);
-  background: rgba(12 21 18 / 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255 255 255 / 0.04);
+  width: var(--sidebar-w);
+  height: calc(100dvh - var(--header-h));
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  background: var(--bg-deep);
+  border-right: 1px solid var(--border-subtle);
   overflow: hidden;
+  transition: width var(--transition-panel);
+}
+
+.filter-bar.is-collapsed {
+  width: 0;
 }
 
 .filter-scroll {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+  overflow-x: hidden;
   scroll-behavior: smooth;
-  padding: 0 24px;
+  padding: 10px 10px 24px;
   flex: 1;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255 255 255 / 0.08) transparent;
 }
 .filter-scroll::-webkit-scrollbar {
-  display: none;
+  width: 4px;
+}
+.filter-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255 255 255 / 0.1);
+  border-radius: 2px;
 }
 
 .filter-chip {
   flex-shrink: 0;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border-radius: var(--radius-pill);
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.2px;
-  border: 1px solid rgba(255 255 255 / 0.06);
+  letter-spacing: 0.1px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text-2);
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
   user-select: none;
+  text-align: left;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filter-chip:hover {
-  border-color: rgba(255 255 255 / 0.12);
+  border-color: rgba(255 255 255 / 0.08);
   color: var(--text-1);
   background: rgba(255 255 255 / 0.04);
 }
 
 .filter-chip.active {
-  background: rgba(45, 212, 168, 0.12);
-  border-color: rgba(45, 212, 168, 0.3);
+  background: rgba(45, 212, 168, 0.1);
+  border-color: rgba(45, 212, 168, 0.22);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(45, 212, 168, 0.08);
 }
 
 .filter-chip-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: currentColor;
-  opacity: 0.7;
+  opacity: 0.8;
+  flex-shrink: 0;
 }
 
-.filter-fade-r {
-  position: absolute;
-  right: 140px;
-  top: 0;
-  bottom: 0;
-  width: 48px;
-  background: linear-gradient(to right, transparent, var(--bg-deep));
-  pointer-events: none;
-}
-
+/* Fade overlays no longer needed in sidebar layout */
+.filter-fade-r,
 .filter-fade-l {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 40px;
-  background: linear-gradient(to left, transparent, var(--bg-deep));
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  z-index: 1;
-}
-.filter-fade-l.visible {
-  opacity: 1;
+  display: none;
 }
 
 .results-badge {
   flex-shrink: 0;
-  padding: 0 20px 0 16px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 14px 14px 10px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-3);
-  white-space: nowrap;
-  border-left: 1px solid var(--border-subtle);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  background: var(--bg-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 #resultCount {
@@ -380,9 +378,38 @@ a {
 .main-content {
   position: relative;
   z-index: 1;
-  max-width: 1600px;
-  margin: 0 auto;
+  flex: 1;
+  min-width: 0;
   padding: 32px 24px 80px;
+}
+
+/* ── Sidebar toggle button ───────────────────────────── */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(255 255 255 / 0.05);
+  border: 1px solid rgba(255 255 255 / 0.08);
+  border-radius: 8px;
+  color: var(--text-2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.sidebar-toggle:hover {
+  background: rgba(45, 212, 168, 0.1);
+  border-color: rgba(45, 212, 168, 0.25);
+  color: var(--accent);
+}
+
+.sidebar-toggle[aria-expanded="false"] {
+  color: var(--text-3);
 }
 
 /* ── Section Headers ────────────────────────────────── */
@@ -494,6 +521,15 @@ a {
 
 .char-glyph {
   font-size: 22px;
+  font-family:
+    "Segoe UI Emoji",
+    "Apple Color Emoji",
+    "Noto Color Emoji",
+    "Noto Emoji",
+    "Segoe UI Symbol",
+    "Noto Sans",
+    "Noto Sans CJK SC",
+    sans-serif;
   line-height: 1;
   min-height: 24px;
   display: flex;
@@ -501,6 +537,11 @@ a {
   justify-content: center;
   color: var(--text-1);
   letter-spacing: 0;
+  transition: transform var(--transition-smooth);
+}
+
+.char-card:hover .char-glyph:not(.is-control) {
+  transform: scale(1.18);
 }
 
 .char-glyph.is-control {
@@ -536,6 +577,79 @@ a {
   white-space: nowrap;
   padding: 0 2px;
   opacity: 0.7;
+}
+
+/* ── Search match highlight ──────────────────────────── */
+.search-match {
+  background: rgba(45, 212, 168, 0.2);
+  color: var(--accent);
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* ── Copy micro-menu ─────────────────────────────────── */
+.copy-menu {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 3px 3px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(8, 14, 12, 0.88) 40%);
+  border-radius: 0 0 8px 8px;
+}
+
+.char-card:hover .copy-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.copy-slot {
+  flex: 1;
+  height: 18px;
+  min-width: 0;
+  padding: 0 2px;
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 6.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: rgba(255 255 255 / 0.06);
+  border: 1px solid rgba(255 255 255 / 0.08);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+  line-height: 1;
+}
+
+.copy-slot:hover {
+  background: rgba(45, 212, 168, 0.15);
+  color: var(--accent);
+  border-color: rgba(45, 212, 168, 0.25);
+}
+
+.copy-slot:active {
+  background: rgba(45, 212, 168, 0.25);
 }
 
 /* ── Detail Panel ────────────────────────────────────── */
@@ -632,6 +746,15 @@ a {
 
 .detail-hero-glyph {
   font-size: 72px;
+  font-family:
+    "Segoe UI Emoji",
+    "Apple Color Emoji",
+    "Noto Color Emoji",
+    "Noto Emoji",
+    "Segoe UI Symbol",
+    "Noto Sans",
+    "Noto Sans CJK SC",
+    sans-serif;
   line-height: 1;
 }
 
@@ -949,16 +1072,21 @@ a {
 @media (max-width: 768px) {
   :root {
     --header-h: 60px;
-    --filter-h: 44px;
+    --sidebar-w: 180px;
   }
 
   .header-inner {
     padding: 0 16px;
-    gap: 12px;
+    gap: 10px;
   }
 
   .logo-sub {
     display: none;
+  }
+
+  /* Sidebar starts collapsed on small screens */
+  .filter-bar {
+    width: 0;
   }
 
   .main-content {
@@ -987,10 +1115,6 @@ a {
 
   .search-input {
     font-size: 14px;
-  }
-
-  .filter-fade-r {
-    right: 100px;
   }
 }
 
@@ -1217,6 +1341,99 @@ a {
   outline-offset: 2px;
   border-radius: 2px;
   text-decoration: underline;
+}
+
+/* ── Normalization section ───────────────────────────── */
+.norm-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.norm-same {
+  font-size: 11px;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.norm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255 255 255 / 0.04);
+  border: 1px solid rgba(255 255 255 / 0.08);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+
+.norm-badge-glyph {
+  font-size: 13px;
+  font-family:
+    "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji",
+    "Noto Emoji", "Segoe UI Symbol", "Noto Sans", sans-serif;
+  color: var(--text-1);
+  line-height: 1;
+}
+
+.norm-badge-code {
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+/* ── Lookalikes section ──────────────────────────────── */
+.detail-muted {
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.lookalikes-content {
+  padding: 4px 0;
+}
+
+.lookalike-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lookalike-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 8px 6px;
+  background: rgba(255 255 255 / 0.03);
+  border: 1px solid rgba(255 255 255 / 0.06);
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 52px;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.lookalike-card:hover {
+  background: rgba(45, 212, 168, 0.08);
+  border-color: rgba(45, 212, 168, 0.25);
+}
+
+.lookalike-glyph {
+  font-size: 22px;
+  font-family:
+    "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji",
+    "Noto Emoji", "Segoe UI Symbol", "Noto Sans", "Noto Sans CJK SC", sans-serif;
+  line-height: 1;
+  color: var(--text-1);
+}
+
+.lookalike-hex {
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 9px;
+  color: var(--text-3);
+  white-space: nowrap;
 }
 
 /* ── Hero glyph copyable ──────────────────────────────── */

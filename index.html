@@ -8,6 +8,35 @@
       content="Unicode Index — The complete reference for all Unicode characters. Browse, search, and copy 5000+ characters with their code points, names, and HTML entities."
     />
     <meta name="theme-color" content="#080e0c" />
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://unicodeindex.matthewd0yle.com/" />
+    <meta property="og:title" content="Unicode Index" />
+    <meta
+      property="og:description"
+      content="The complete reference for all Unicode characters. Browse, search, and copy 5000+ characters with their code points, names, and HTML entities."
+    />
+    <meta property="og:image" content="https://unicodeindex.matthewd0yle.com/web-app-manifest-512x512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Unicode Index" />
+    <meta
+      name="twitter:description"
+      content="The complete reference for all Unicode characters. Browse, search, and copy 5000+ characters with their code points, names, and HTML entities."
+    />
+    <meta name="twitter:image" content="https://unicodeindex.matthewd0yle.com/web-app-manifest-512x512.png" />
+
+    <!-- Favicons (explicit, no auto-discovery latency) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Preload critical data so it downloads alongside HTML parsing -->
+    <link rel="preload" href="/unicode-data.js" as="script" />
+
     <title>Unicode Index</title>
 
     <link rel="stylesheet" href="styles.css" />
@@ -116,6 +145,18 @@
         </div>
 
         <button
+          class="sidebar-toggle"
+          id="sidebarToggle"
+          aria-label="Toggle block filter panel"
+          aria-expanded="true"
+          aria-controls="filterBar"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 3v18"/>
+          </svg>
+        </button>
+        <button
           class="about-btn"
           id="aboutBtn"
           aria-label="About Unicode Index"
@@ -125,13 +166,11 @@
       </div>
     </header>
 
-    <!-- ── Filter bar ── -->
-    <nav class="filter-bar" aria-label="Filter by Unicode block">
-      <div class="filter-fade-l" id="filterFadeL" aria-hidden="true"></div>
-      <div class="filter-scroll" id="filterChips" role="list">
-        <!-- populated by JS -->
-      </div>
-      <div class="filter-fade-r" aria-hidden="true"></div>
+    <!-- ── Content layout (sidebar + main) ── -->
+    <div class="content-layout">
+
+    <!-- ── Filter sidebar ── -->
+    <nav class="filter-bar" id="filterBar" aria-label="Filter by Unicode block">
       <div
         class="results-badge"
         id="resultsBadge"
@@ -140,6 +179,10 @@
       >
         <span id="resultCount">–</span> characters
       </div>
+      <div class="filter-scroll" id="filterChips" role="list">
+        <!-- populated by JS -->
+      </div>
+      <div class="filter-fade-l" id="filterFadeL" aria-hidden="true"></div>
     </nav>
 
     <!-- ── Main content ── -->
@@ -154,6 +197,8 @@
         </p>
       </div>
     </main>
+
+    </div><!-- /.content-layout -->
 
     <!-- ── Detail panel ── -->
     <div class="detail-backdrop" id="detailBackdrop" aria-hidden="true"></div>
@@ -338,7 +383,7 @@
       </div>
     </dialog>
 
-    <script src="unicode-data.js"></script>
-    <script src="app.js"></script>
+    <script src="unicode-data.js" defer></script>
+    <script src="app.js" defer></script>
   </body>
 </html>

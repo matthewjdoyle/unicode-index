@@ -7,6 +7,7 @@
 // Blocks are grouped by their primary content type.
 
 const BLOCK_COLOR_LETTERS = "#2dd4a8"; // letters (emerald)
+const BLOCK_COLOR_CJK    = "#f0883e"; // CJK ideographs (orange)
 const BLOCK_COLOR_MARKS = "#6e7681"; // diacritical marks (gray)
 const BLOCK_COLOR_NUMBERS = "#34d399"; // numbers (mint green)
 const BLOCK_COLOR_SYMBOLS = "#8b5cf6"; // symbols / misc (violet)
@@ -60,6 +61,17 @@ const BLOCK_COLORS = {
   "Miscellaneous Mathematical Symbols-B": BLOCK_COLOR_MATH,
   "Supplemental Mathematical Operators": BLOCK_COLOR_MATH,
   "Miscellaneous Symbols and Arrows": BLOCK_COLOR_PUNCT,
+  // Extended blocks (lazy-loaded via unicode-data-ext.js)
+  "Devanagari":                    BLOCK_COLOR_SCRIPT,
+  "Bengali":                       BLOCK_COLOR_SCRIPT,
+  "Thai":                          BLOCK_COLOR_SCRIPT,
+  "CJK Radicals Supplement":       BLOCK_COLOR_CJK,
+  "Hiragana":                      BLOCK_COLOR_SCRIPT,
+  "Katakana":                      BLOCK_COLOR_SCRIPT,
+  "CJK Unified Ideographs":        BLOCK_COLOR_CJK,
+  "Hangul Syllables":              BLOCK_COLOR_SCRIPT,
+  "Misc Symbols and Pictographs":  BLOCK_COLOR_SYMBOLS,
+  "Emoticons":                     BLOCK_COLOR_SYMBOLS,
 };
 
 /* ── Unicode category descriptions ──────────────────── */
@@ -104,14 +116,17 @@ const state = {
   renderedCount: 0,
   PAGE_SIZE: 350,
   selectedIdx: -1,
+  pendingHashCp: null,
 };
 
 /* ── DOM refs ────────────────────────────────────────── */
 const $ = (id) => document.getElementById(id);
 const searchInput = $("search");
 const searchClear = $("searchClear");
+const filterBar = $("filterBar");
 const filterChips = $("filterChips");
 const filterFadeL = $("filterFadeL");
+const sidebarToggle = $("sidebarToggle");
 const resultCount = $("resultCount");
 const charGrid = $("charGrid");
 const loadSentinel = $("loadSentinel");
@@ -369,6 +384,29 @@ function renderFlatBatch(startIdx) {
   state.renderedCount = startIdx + slice.length;
 }
 
+function highlightName(name, query) {
+  const idx = name.toLowerCase().indexOf(query);
+  if (idx < 0) return escHtml(name);
+  return (
+    escHtml(name.slice(0, idx)) +
+    `<mark class="search-match">${escHtml(name.slice(idx, idx + query.length))}</mark>` +
+    escHtml(name.slice(idx + query.length))
+  );
+}
+
+function makeSlot(label, value, title) {
+  const btn = document.createElement("button");
+  btn.className = "copy-slot";
+  btn.textContent = label;
+  btn.title = title;
+  btn.tabIndex = -1;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    copyToClipboard(value, title);
+  });
+  return btn;
+}
+
 function createCard(entry) {
   const card = document.createElement("button");
   card.className = "char-card";
@@ -389,9 +427,26 @@ function createCard(entry) {
   const nameEl = document.createElement("div");
   nameEl.className = "char-name";
   const rawName = entry.name;
-  nameEl.textContent = rawName.length > 20 ? rawName.slice(0, 18) + "…" : rawName;
+  const truncName = rawName.length > 20 ? rawName.slice(0, 18) + "…" : rawName;
   nameEl.title = rawName;
+  const q = state.search.trim().toLowerCase();
+  if (q && truncName.toLowerCase().includes(q)) {
+    nameEl.innerHTML = highlightName(truncName, q);
+  } else {
+    nameEl.textContent = truncName;
+  }
   card.appendChild(nameEl);
+
+  // Copy micro-menu
+  const menu = document.createElement("div");
+  menu.className = "copy-menu";
+  menu.setAttribute("aria-hidden", "true");
+  if (!isControl(entry)) {
+    menu.appendChild(makeSlot(entry.char, entry.char, "Character"));
+  }
+  menu.appendChild(makeSlot(`U+${entry.hex}`, `U+${entry.hex}`, "Code point"));
+  menu.appendChild(makeSlot(`&#x${entry.hex};`, `&#x${entry.hex};`, "HTML entity"));
+  card.appendChild(menu);
 
   card.addEventListener("click", () => {
     const idx = state.filtered.findIndex((e) => e.cp === entry.cp);
@@ -431,12 +486,15 @@ function openDetail(globalIdx, filteredIdx) {
 
   // Update nav buttons
   updateDetailNav();
+  pushUrlState();
 }
 
 function closeDetail() {
+  detailContext.globalIdx = -1;
   detailPanel.setAttribute("aria-hidden", "true");
   detailBackdrop.classList.remove("visible");
   document.querySelector(".char-card.is-active")?.classList.remove("is-active");
+  pushUrlState();
 }
 
 function updateDetailNav() {
@@ -444,6 +502,79 @@ function updateDetailNav() {
   detailPrev.disabled = filteredIdx <= 0;
   detailNext.disabled =
     filteredIdx < 0 || filteredIdx >= state.filtered.length - 1;
+}
+
+/* ── Normalization & Lookalikes helpers ──────────────── */
+let cpLookup = null;
+
+function getCpLookup() {
+  if (!cpLookup) cpLookup = new Map(UNICODE_DATA.map((e) => [e.cp, e]));
+  return cpLookup;
+}
+
+function renderNormSequence(value, original) {
+  if (value === original) return '<span class="norm-same">= original</span>';
+  return [...value] // iterate by Unicode code point
+    .map((c) => {
+      const cp = c.codePointAt(0);
+      const hex = cp.toString(16).toUpperCase().padStart(4, "0");
+      return `<span class="norm-badge"><span class="norm-badge-glyph">${escHtml(c)}</span><code class="norm-badge-code">U+${hex}</code></span>`;
+    })
+    .join("");
+}
+
+function populateLookalikes(entry) {
+  const content = detailInner.querySelector(".lookalikes-content");
+  if (!content) return;
+  const section = content.closest(".detail-section");
+
+  if (!window.CONFUSABLES) {
+    // Data not yet loaded — leave the "Loading…" placeholder in place
+    return;
+  }
+
+  const confusableHexes = CONFUSABLES[entry.hex] ?? [];
+  const lookup = getCpLookup();
+  const lookalikes = confusableHexes
+    .map((h) => lookup.get(parseInt(h, 16)))
+    .filter(Boolean);
+
+  if (lookalikes.length === 0) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  const grid = document.createElement("div");
+  grid.className = "lookalike-grid";
+
+  for (const like of lookalikes) {
+    const btn = document.createElement("button");
+    btn.className = "lookalike-card";
+    btn.title = like.name;
+    const glyphDisplay = isControl(like)
+      ? "·"
+      : isCombining(like)
+      ? "\u25CC" + like.char
+      : like.char;
+    const glyphEl = document.createElement("span");
+    glyphEl.className = "lookalike-glyph";
+    glyphEl.textContent = glyphDisplay;
+    const hexEl = document.createElement("span");
+    hexEl.className = "lookalike-hex";
+    hexEl.textContent = `U+${like.hex}`;
+    btn.appendChild(glyphEl);
+    btn.appendChild(hexEl);
+    btn.addEventListener("click", () => {
+      const gIdx = UNICODE_DATA.findIndex((e) => e.cp === like.cp);
+      const fIdx = state.filtered.findIndex((e) => e.cp === like.cp);
+      openDetail(gIdx, fIdx >= 0 ? fIdx : null);
+    });
+    grid.appendChild(btn);
+  }
+
+  content.innerHTML = "";
+  content.appendChild(grid);
 }
 
 function renderDetailContent(entry) {
@@ -473,6 +604,31 @@ function renderDetailContent(entry) {
 
   const catCode = entry.cat;
   const catLabel = CAT_LABELS[catCode] ?? catCode;
+
+  // Normalization: compute all four forms; only show section when any differs
+  let normSection = "";
+  if (!isCtrl) {
+    const normForms = ["NFC", "NFD", "NFKC", "NFKD"].map((f) => ({
+      form: f,
+      value: entry.char.normalize(f),
+    }));
+    if (normForms.some((f) => f.value !== entry.char)) {
+      normSection = `
+    <div class="detail-section">
+      <div class="detail-section-label">Normalization</div>
+      ${normForms
+        .map(
+          ({ form, value }) => `
+      <div class="detail-row">
+        <span class="detail-row-label">${form}</span>
+        <span class="detail-row-value norm-value">${renderNormSequence(value, entry.char)}</span>
+        ${value !== entry.char ? `<button class="detail-copy-btn" data-copy="${escHtml(value)}" title="Copy ${form}" aria-label="Copy ${form}">⎘</button>` : ""}
+      </div>`,
+        )
+        .join("")}
+    </div>`;
+    }
+  }
 
   const copyChar = isCtrl ? "" : entry.char;
   detailInner.innerHTML = `
@@ -513,7 +669,17 @@ function renderDetailContent(entry) {
         <span class="detail-row-value">${escHtml(entry.block)}</span>
       </div>
     </div>
+
+    ${normSection}
+
+    <div class="detail-section">
+      <div class="detail-section-label">Lookalikes</div>
+      <div class="lookalikes-content"><span class="detail-muted">Loading…</span></div>
+    </div>
   `;
+
+  // Populate lookalikes via DOM (separate from innerHTML template)
+  populateLookalikes(entry);
 
   // Bind copy buttons inside detail
   detailInner.querySelectorAll(".detail-copy-btn[data-copy]").forEach((btn) => {
@@ -606,17 +772,13 @@ function buildFilterChips() {
         inline: "center",
       });
       renderAll();
+      pushUrlState();
     });
 
     frag.appendChild(chip);
   }
 
   filterChips.appendChild(frag);
-
-  // Show/hide left fade based on scroll position
-  filterChips.addEventListener("scroll", () => {
-    filterFadeL.classList.toggle("visible", filterChips.scrollLeft > 8);
-  }, { passive: true });
 }
 
 /* ── Infinite scroll ─────────────────────────────────── */
@@ -643,6 +805,7 @@ const doSearch = debounce((q) => {
   state.search = q;
   searchClear.hidden = !q;
   renderAll();
+  pushUrlState();
 }, 160);
 
 searchInput.addEventListener("input", (e) => doSearch(e.target.value));
@@ -653,7 +816,24 @@ searchClear.addEventListener("click", () => {
   searchClear.hidden = true;
   searchInput.focus();
   renderAll();
+  pushUrlState();
 });
+
+/* ── Sidebar toggle ──────────────────────────────────── */
+(function initSidebar() {
+  // Restore persisted state (desktop only — mobile starts collapsed via CSS)
+  const collapsed = localStorage.getItem("sidebarCollapsed") === "true";
+  if (collapsed) {
+    filterBar.classList.add("is-collapsed");
+    sidebarToggle.setAttribute("aria-expanded", "false");
+  }
+
+  sidebarToggle.addEventListener("click", () => {
+    const isNowCollapsed = filterBar.classList.toggle("is-collapsed");
+    sidebarToggle.setAttribute("aria-expanded", String(!isNowCollapsed));
+    localStorage.setItem("sidebarCollapsed", String(isNowCollapsed));
+  });
+})();
 
 /* ── Detail panel events ─────────────────────────────── */
 detailClose.addEventListener("click", closeDetail);
@@ -843,10 +1023,125 @@ function runRenderabilityCheck() {
     }, 300);
   }
 }
+/* ── URL state ───────────────────────────────────────── */
+function readUrlState() {
+  const params = new URLSearchParams(location.search);
+  return {
+    q:     params.get("q")     ?? "",
+    block: params.get("block") ?? "all",
+    hash:  location.hash,
+  };
+}
+
+function pushUrlState() {
+  const params = new URLSearchParams();
+  if (state.search)                params.set("q",     state.search);
+  if (state.activeBlock !== "all") params.set("block", state.activeBlock);
+  const search = [...params].length ? "?" + params.toString() : "";
+  const hash   = detailContext.globalIdx >= 0
+    ? "#U+" + UNICODE_DATA[detailContext.globalIdx].hex
+    : "";
+  history.replaceState(null, "", location.pathname + search + hash);
+}
+
+function applyHashFragment(hash) {
+  const m = hash.match(/^#U\+([0-9A-Fa-f]+)$/i);
+  if (!m) return;
+  const cp = parseInt(m[1], 16);
+  const globalIdx = UNICODE_DATA.findIndex((e) => e.cp === cp);
+  if (globalIdx >= 0) {
+    const filteredIdx = state.filtered.findIndex((e) => e.cp === cp);
+    openDetail(globalIdx, filteredIdx >= 0 ? filteredIdx : null);
+    return;
+  }
+  // Character not yet loaded — defer until ext data arrives
+  state.pendingHashCp = cp;
+}
+
+window.addEventListener("popstate", () => {
+  const { q, block, hash } = readUrlState();
+  state.search      = q;
+  state.activeBlock = block;
+  searchInput.value = q;
+  searchClear.hidden = !q;
+  filterChips.querySelectorAll(".filter-chip").forEach((c) =>
+    c.classList.toggle("active", c.dataset.block === block),
+  );
+  renderAll();
+  if (hash) {
+    applyHashFragment(hash);
+  } else {
+    closeDetail();
+  }
+});
+
+/* ── Extended data (lazy load) ───────────────────────── */
+function loadExtendedData() {
+  const script = document.createElement("script");
+  script.src = "unicode-data-ext.js";
+  script.async = true;
+  script.onload = () => {
+    if (!window.UNICODE_EXT_DATA?.length) return;
+    UNICODE_DATA.push(...UNICODE_EXT_DATA);
+    cpLookup = null; // invalidate cached lookup now that UNICODE_DATA grew
+    filterChips.innerHTML = "";
+    buildFilterChips();
+    const isSearching = state.search.trim() !== "" || state.activeBlock !== "all";
+    if (isSearching) renderAll();
+    if (state.pendingHashCp !== null) {
+      applyHashFragment(`#U+${state.pendingHashCp.toString(16).toUpperCase()}`);
+      state.pendingHashCp = null;
+    }
+  };
+  script.onerror = () => {
+    console.warn("[Unicode Index] Failed to load unicode-data-ext.js");
+  };
+  document.head.appendChild(script);
+}
+
+/* ── Confusables data (lazy load) ───────────────────── */
+function loadConfusablesData() {
+  const script = document.createElement("script");
+  script.src = "confusables-data.js";
+  script.async = true;
+  script.onload = () => {
+    if (!window.CONFUSABLES) return;
+    // If detail panel is open, populate lookalikes now that data is ready
+    if (detailPanel.getAttribute("aria-hidden") === "false" && detailContext.globalIdx >= 0) {
+      populateLookalikes(UNICODE_DATA[detailContext.globalIdx]);
+    }
+  };
+  script.onerror = () => {
+    console.warn("[Unicode Index] Failed to load confusables-data.js");
+    // Hide the loading placeholder on error
+    detailInner.querySelector(".lookalikes-content")?.closest(".detail-section")
+      ?.setAttribute("hidden", "");
+  };
+  document.head.appendChild(script);
+}
+
 /* ── Boot ────────────────────────────────────────────── */
 (function init() {
+  // Restore state from URL before first render
+  const { q, block, hash } = readUrlState();
+  if (block !== "all") state.activeBlock = block;
+  if (q) {
+    state.search = q;
+    searchInput.value = q;
+    searchClear.hidden = false;
+  }
+
   buildFilterChips();
+
   renderAll();
+
+  // Open detail panel from URL hash after first render
+  if (hash) applyHashFragment(hash);
+
+  // Background-load extended Unicode blocks and confusables
+  loadExtendedData();
+  loadConfusablesData();
+
   // Run renderability check after paint
   requestAnimationFrame(() => requestAnimationFrame(runRenderabilityCheck));
 
@@ -860,4 +1155,11 @@ function runRenderabilityCheck() {
   `;
   hint.textContent = "/ to search";
   document.body.appendChild(hint);
+
+  // Register service worker for offline support and asset caching
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .catch((err) => console.warn("[Unicode Index] SW registration failed:", err));
+  }
 })();

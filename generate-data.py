@@ -54,24 +54,43 @@ BLOCKS = [
     ("Miscellaneous Symbols and Arrows",     0x2B00, 0x2BFF),
 ]
 
-chars = []
-for block_name, start, end in BLOCKS:
-    for cp in range(start, end + 1):
-        try:
-            ch = chr(cp)
-            name = unicodedata.name(ch, "")
-            cat = unicodedata.category(ch)
-            chars.append({
-                "cp": cp,
-                "hex": f"{cp:04X}",
-                "char": ch,
-                "name": name if name else f"[{cat}]",
-                "cat": cat,
-                "block": block_name,
-            })
-        except Exception:
-            pass
+EXTENDED_BLOCKS = [
+    # Global scripts
+    ("Devanagari",                   0x0900, 0x097F),
+    ("Bengali",                      0x0980, 0x09FF),
+    ("Thai",                         0x0E00, 0x0E7F),
+    ("CJK Radicals Supplement",      0x2E80, 0x2EFF),
+    ("Hiragana",                     0x3040, 0x309F),
+    ("Katakana",                     0x30A0, 0x30FF),
+    # Large ideographic / syllabic blocks
+    ("CJK Unified Ideographs",       0x4E00, 0x9FFF),
+    ("Hangul Syllables",             0xAC00, 0xD7AF),
+    # Emoji (Supplementary Multilingual Plane)
+    ("Misc Symbols and Pictographs", 0x1F300, 0x1F5FF),
+    ("Emoticons",                    0x1F600, 0x1F64F),
+]
 
+def build_chars(blocks):
+    result = []
+    for block_name, start, end in blocks:
+        for cp in range(start, end + 1):
+            try:
+                ch = chr(cp)
+                name = unicodedata.name(ch, "")
+                cat = unicodedata.category(ch)
+                result.append({
+                    "cp": cp,
+                    "hex": f"{cp:04X}",
+                    "char": ch,
+                    "name": name if name else f"[{cat}]",
+                    "cat": cat,
+                    "block": block_name,
+                })
+            except Exception:
+                pass
+    return result
+
+chars = build_chars(BLOCKS)
 print(f"Generated {len(chars)} characters across {len(BLOCKS)} blocks")
 
 with open("unicode-data.js", "w", encoding="utf-8") as f:
@@ -82,3 +101,15 @@ with open("unicode-data.js", "w", encoding="utf-8") as f:
     f.write(";\n")
 
 print("Written to unicode-data.js")
+
+ext_chars = build_chars(EXTENDED_BLOCKS)
+print(f"Generated {len(ext_chars)} extended characters across {len(EXTENDED_BLOCKS)} blocks")
+
+with open("unicode-data-ext.js", "w", encoding="utf-8") as f:
+    f.write("/* Auto-generated extended Unicode character data — do not edit manually */\n")
+    f.write("/* Run: python generate-data.py to regenerate */\n")
+    f.write("const UNICODE_EXT_DATA = ")
+    json.dump(ext_chars, f, ensure_ascii=False, separators=(",", ":"))
+    f.write(";\n")
+
+print("Written to unicode-data-ext.js")

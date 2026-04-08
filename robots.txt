@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://unicodeindex.matthewd0yle.com/sitemap.xml
