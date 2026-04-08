@@ -214,9 +214,9 @@ function fuzzyScore(haystack, needle) {
 }
 
 /* ── Filter logic ────────────────────────────────────── */
-function computeFiltered() {
+function computeFiltered(blockOverride) {
   const q = state.search.trim().toLowerCase();
-  const block = state.activeBlock;
+  const block = blockOverride !== undefined ? blockOverride : state.activeBlock;
 
   // No query: return all non-control chars, optionally filtered by block
   if (!q) {
@@ -279,6 +279,7 @@ function renderAll() {
   state.renderedCount = 0;
   charGrid.innerHTML = "";
   resultCount.textContent = state.filtered.length.toLocaleString();
+  updateChipStates();
 
   if (state.filtered.length === 0) {
     emptyState.hidden = false;
@@ -746,10 +747,12 @@ function buildFilterChips() {
   const blocks = ["all", ...Object.keys(BLOCK_COLORS)];
   const frag = document.createDocumentFragment();
 
-  for (const block of blocks) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     const chip = document.createElement("button");
     chip.className = `filter-chip${block === state.activeBlock ? " active" : ""}`;
     chip.dataset.block = block;
+    chip.dataset.originalIndex = i;
     chip.setAttribute("role", "listitem");
 
     if (block === "all") {
@@ -779,6 +782,45 @@ function buildFilterChips() {
   }
 
   filterChips.appendChild(frag);
+}
+
+/* ── Chip state (empty / active) ────────────────────── */
+function updateChipStates() {
+  // Compute which blocks have displayable characters for the current state,
+  // always ignoring the active block filter so we don't false-gray clickable blocks.
+  // With no search, state.filtered already excludes control chars — so blocks like
+  // "C0 Controls" that consist entirely of controls will correctly show as empty.
+  const base =
+    state.activeBlock === "all" ? state.filtered : computeFiltered("all");
+  const activeBlocks = new Set(base.map((e) => e.block));
+
+  const chips = [...filterChips.querySelectorAll(".filter-chip")];
+  const allChip = chips.find((c) => c.dataset.block === "all");
+  const blockChips = chips.filter((c) => c.dataset.block !== "all");
+
+  const withResults = blockChips.filter((c) => activeBlocks.has(c.dataset.block));
+  const withoutResults = blockChips.filter(
+    (c) => !activeBlocks.has(c.dataset.block),
+  );
+
+  withResults.forEach((c) => {
+    c.classList.remove("chip-empty");
+    c.disabled = false;
+  });
+  withoutResults.forEach((c) => {
+    c.classList.add("chip-empty");
+    c.disabled = true;
+  });
+
+  // Maintain original relative order within each group
+  const byIndex = (a, b) =>
+    Number(a.dataset.originalIndex) - Number(b.dataset.originalIndex);
+  withResults.sort(byIndex);
+  withoutResults.sort(byIndex);
+
+  // Re-order DOM: All Blocks → blocks with results → blocks without results
+  const ordered = [...(allChip ? [allChip] : []), ...withResults, ...withoutResults];
+  ordered.forEach((c) => filterChips.appendChild(c));
 }
 
 /* ── Infinite scroll ─────────────────────────────────── */

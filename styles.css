@@ -340,6 +340,12 @@ a {
   color: var(--accent);
 }
 
+.filter-chip.chip-empty {
+  opacity: 0.28;
+  pointer-events: none;
+  cursor: default;
+}
+
 .filter-chip-dot {
   width: 7px;
   height: 7px;
@@ -477,7 +483,7 @@ a {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 6px;
+  padding: 4px 4px 22px;
   aspect-ratio: 1;
   background: rgba(255 255 255 / 0.02);
   border: 1px solid rgba(255 255 255 / 0.05);
@@ -486,7 +492,6 @@ a {
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast),
-    transform var(--transition-smooth),
     box-shadow var(--transition-smooth);
   overflow: hidden;
   content-visibility: auto;
@@ -497,15 +502,12 @@ a {
 .char-card:hover {
   background: rgba(255 255 255 / 0.05);
   border-color: rgba(255 255 255 / 0.1);
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.4),
-    0 0 12px rgba(45, 212, 168, 0.06);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   z-index: 2;
 }
 
 .char-card:active {
-  transform: translateY(0) scale(0.98);
+  background: rgba(255 255 255 / 0.07);
 }
 
 .char-card:focus-visible {
@@ -537,11 +539,6 @@ a {
   justify-content: center;
   color: var(--text-1);
   letter-spacing: 0;
-  transition: transform var(--transition-smooth);
-}
-
-.char-card:hover .char-glyph:not(.is-control) {
-  transform: scale(1.18);
 }
 
 .char-glyph.is-control {
@@ -595,24 +592,22 @@ a {
   bottom: 0;
   left: 0;
   right: 0;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 0 3px 3px;
+  padding: 2px 3px;
   opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity var(--transition-fast),
-    transform var(--transition-fast);
+  transition: opacity var(--transition-fast);
   pointer-events: none;
-  background: linear-gradient(to bottom, transparent, rgba(8, 14, 12, 0.88) 40%);
+  background: rgba(8, 14, 12, 0.92);
+  border-top: 1px solid rgba(255 255 255 / 0.06);
   border-radius: 0 0 8px 8px;
 }
 
 .char-card:hover .copy-menu {
   opacity: 1;
-  transform: translateY(0);
   pointer-events: auto;
 }
 
@@ -1098,6 +1093,18 @@ a {
     gap: 5px;
   }
 
+  .char-card {
+    padding: 4px 3px 20px;
+  }
+
+  .copy-menu {
+    height: 20px;
+  }
+
+  .char-name {
+    display: none;
+  }
+
   .detail-panel {
     width: 100vw;
   }
@@ -1111,6 +1118,14 @@ a {
   .char-group {
     grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
     gap: 4px;
+  }
+
+  .char-card {
+    padding: 3px 3px 18px;
+  }
+
+  .copy-menu {
+    height: 18px;
   }
 
   .search-input {
